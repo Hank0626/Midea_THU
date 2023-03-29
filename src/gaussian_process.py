@@ -2,10 +2,9 @@ import numpy as np
 import tensorflow as tf
 import gpflow
 import matplotlib.pyplot as plt
-from dataload import MideaData
+from utils.mideadata import MideaData
+from utils.evaluate import np_mae, np_mape, np_rmse
 import click
-from evaluate import np_mae, np_mape, np_rmse
-
 
 @click.command()
 @click.option("--name", default="data_chu_1a", help="data name")
