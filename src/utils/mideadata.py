@@ -72,9 +72,18 @@ class MideaData(object):
                 data = data[~np.isnan(data).any(axis=1), :]
                 self.new_data[cls][name] = data
 
-    # 使用data_statistics装饰器，获取数据
     @data_statistics
-    def get_data(self, cls: str = "13DKB", type: str = "1H", test_num: int = 100):
+    def get_data(self, cls: str = "13DKB", type: str = "1H", ratio: float = 0.25):
+        """
+        参数:
+            cls (str): 设备型号. Defaults to "13DKB".
+            type (str): 测试类别. Defaults to "1H".
+            ratio (ratio): 测试集比例. Defaults to 0.25.
+
+        Returns:
+            新设备的所有数据(16167,2), 旧设备训练数据, 旧设备测试数据
+        """
+
         # 从传统数据中获取与指定类型匹配的键
         trad_type = None
         for key in self.trad_data[cls].keys():
@@ -86,7 +95,7 @@ class MideaData(object):
         n = trad_data.shape[0]
 
         # 生成测试数据索引
-        test_idx = np.linspace(0, n - 1, num=test_num, endpoint=True).astype(int)
+        test_idx = np.linspace(0, n - 1, num=int(ratio * n), endpoint=True).astype(int)
         train_idx = [i for i in range(n) if i not in test_idx]
 
         return new_data, trad_data[train_idx], trad_data[test_idx]
