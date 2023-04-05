@@ -6,16 +6,18 @@ from utils.mideadata import MideaData
 from utils.evaluate import np_mae, np_mape, np_rmse
 import click
 
+
 @click.command()
-@click.option("--name", default="data_chu_1a", help="data name")
+@click.option("--cls", default="13DKB", help="class name")
+@click.option("--type", default="1H", help="type name")
 @click.option("--test_num", default=100, help="test data number")
 @click.option("--iterations", default=50000, help="iterations")
 @click.option("--minibatch_size", default=100, help="minibatch size")
 @click.option("--lr", default=0.01, help="learning rate")
-def GP(name, test_num, iterations, minibatch_size, lr):
+def GP(cls, type, test_num, iterations, minibatch_size, lr):
     data = MideaData()
 
-    train, test = data.get_data(name=name, test_num=test_num)
+    new_data, train, test = data.get_data(cls=cls, type=type, test_num=test_num)
 
     perm = np.random.permutation(len(train))
 
