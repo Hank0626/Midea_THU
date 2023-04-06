@@ -10,28 +10,28 @@ import click
 @click.command()
 @click.option("--cls", default="13DKB", help="class name")
 @click.option("--type", default="1H", help="type name")
-@click.option("--test_num", default=100, help="test data number")
+@click.option("--ratio", default=0.25, help="test data number")
 @click.option("--iterations", default=50000, help="iterations")
 @click.option("--minibatch_size", default=100, help="minibatch size")
 @click.option("--lr", default=0.01, help="learning rate")
-def GP(cls, type, test_num, iterations, minibatch_size, lr):
+def GP(cls, type, ratio, iterations, minibatch_size, lr):
     data = MideaData()
 
-    new_data, train, test = data.get_data(cls=cls, type=type, test_num=test_num)
+    new_data, train, test = data.get_data(cls=cls, type=type, ratio=ratio)
 
     perm = np.random.permutation(len(train))
 
-    k = gpflow.kernels.Matern52(lengthscales=[0.01, 0.01])
+    k = gpflow.kernels.Matern52(lengthscales=[0.01])
 
     M = 100
 
-    Z = train[perm[:M]][:, [0, 2]].copy()
+    Z = train[perm[:M]][:].copy()
 
     m = gpflow.models.SVGP(k, gpflow.likelihoods.Gaussian(), Z, num_data=len(train))
 
     train_dataset = (
         tf.data.Dataset.from_tensor_slices(
-            (train[:, [0, 2]].reshape(-1, 2), train[:, 1].reshape(-1, 1))
+            (train[:, 0].reshape(-1, 2), train[:, 1].reshape(-1, 1))
         )
         .repeat()
         .shuffle(len(train))
@@ -52,7 +52,7 @@ def GP(cls, type, test_num, iterations, minibatch_size, lr):
             elbo = -training_loss().numpy()
             print(step, elbo)
 
-    mean, var = m.predict_f(test[:, [0, 2]])
+    mean, var = m.predict_f(test[:, 0])
 
     _y = mean.numpy().reshape(-1)
 
