@@ -1,101 +1,108 @@
 import os
 import os.path as osp
 import numpy as np
+from scipy.interpolate import interp1d
+import random
 import time
 
 
 # 装饰器，用于输出数据统计信息
 def data_statistics(f):
     def wrapper(*args, **kwargs):
-        new, train, test = f(*args, **kwargs)
+        train, test = f(*args, **kwargs)
         print(kwargs)
-        print(f"<========= Loading {kwargs['cls']}:{kwargs['type']} =========>")
-        print(f"new shape: {new.shape=}")  # 输出新设备数据的形状
-        print(f"train shape: {train.shape=}")  # 输出传统设备训练数据的形状
-        print(f"test shape: {test.shape=}")  # 输出传统设备测试数据的形状
+        print(f"<========= Loading {kwargs['cls']} =========>")
+        print(f"train length: {len(train)=}")
+        print(f"train shape: {train[0].shape=}")
+        print(f"test length: {len(test)=}")
+        print(f"test shape: {test[0].shape=}")
         print(f"<========= Data Loaded =========>")
         time.sleep(3)
-        return new, train, test
+        return train, test
 
     return wrapper
 
 
 class MideaData(object):
     """
-    MideaData类用于处理和组织数据。该类包括两个主要的数据字典: trad_data和new_data, 分别用于存储传统数据和新数据。
+    美的数据类，用于处理和存储从不同文件中加载的数据。
+    该类分别处理传统数据和新数据，并将它们存储为字典。
 
-    数据字典结构如下：
+    属性:
+        data_path (str): 数据文件夹的路径。
+        cls (list): 分类名称列表。
+        trad_data (dict): 存储传统数据的字典。
+        new_data (dict): 存储新数据的字典。
 
-    trad_data: {
-        '13DKB': {
-            '1H{xx}': <numpy.ndarray 数据>,
-            '2H{xx}': <numpy.ndarray 数据>,
-            ...
-        }
-    }
-
-    new_data: {
-        '13DKB': {
-            '1H': <numpy.ndarray 数据>,
-            '2H': <numpy.ndarray 数据>,
-            ...
-        }
-    }
-
-    其中，'13DKB'是类别(cls)，可以根据实际情况进行扩展。数据字典的键是从数据文件夹(如：../data/13DKB_trad和../data/13DKB_new)中读取的文件名。
-    对于每个类别，文件名的格式为"{type}{xx}"（传统数据）和"{type}"（新数据），如：'1H4M' 和 '1H'。
-    文件名中的{type}表示数据的类型，例如：'1H'、'2H'等。
-
-    在初始化MideaData对象时, 它会自动读取数据文件夹中的所有数据, 并将其存储为numpy数组。
+    方法:
+        get_data(cls, test_num, seed): 返回经过处理的训练数据和测试数据。
     """
 
     def __init__(self) -> None:
         self.data_path = "../data/"
         self.cls = ["13DKB"]
-        self.trad_data = dict()  # 传统设备数据
-        self.new_data = dict()  # 新设备数据
+        self.trad_data = dict()
+        self.new_data = dict()
         for cls in self.cls:
             self.trad_data[cls] = dict()
             self.new_data[cls] = dict()
             cls_path_trad = osp.join(self.data_path, "{}_trad".format(cls))
             cls_path_new = osp.join(self.data_path, "{}_new".format(cls))
 
-            # 读取传统数据
-            for name in os.listdir(cls_path_trad):
+            for name in sorted(os.listdir(cls_path_trad)):
+                if name.startswith("."):
+                    continue
                 data = np.genfromtxt(osp.join(cls_path_trad, name), delimiter=";")
                 data = data[:, ~np.isnan(data).any(axis=0)]
                 self.trad_data[cls][name] = data
 
-            # 读取新数据
-            for name in os.listdir(cls_path_new):
+            # 读取新数据并线性插值，使其对齐传统数据
+            for name in sorted(os.listdir(cls_path_new)):
+                if name.startswith("."):
+                    continue
                 data = np.genfromtxt(osp.join(cls_path_new, name))
                 data = data[~np.isnan(data).any(axis=1), :]
-                self.new_data[cls][name] = data
+                data = data[np.isfinite(data).all(axis=1), :]
+                x, y = data[:, 0], data[:, 1]
+                f = interp1d(x, y, kind="linear", fill_value="extrapolate")
+                x_trad = self.trad_data[cls][name][:, 0]
+                y_interpolate = f(x_trad)
+                self.new_data[cls][name] = np.c_[x_trad, y_interpolate]
 
     @data_statistics
-    def get_data(self, cls: str = "13DKB", type: str = "1H", ratio: float = 0.25):
+    def get_data(self, cls: str = "13DKB", test_num: int = 3, seed: int = None):
         """
+        获取指定分类的训练数据和测试数据。
+
         参数:
-            cls (str): 设备型号. Defaults to "13DKB".
-            type (str): 测试类别. Defaults to "1H".
-            ratio (ratio): 测试集比例. Defaults to 0.25.
+            cls (str): 分类名称，默认为 "13DKB"。
+            test_num (int): 测试数据集中的数据类型数量，默认为 3。
+            seed (int): 随机种子，默认为 None。
 
-        Returns:
-            新设备的所有数据(16167,2), 旧设备训练数据, 旧设备测试数据
+        返回:
+            train_data (list): 训练数据列表。(20001, 3) 第一列为x, 第二列为y_new, 第三列为y_trad
+            test_data (list): 测试数据列表。(20001, 3) 第一列为x, 第二列为y_new, 第三列为y_trad。
+            训练目标就是把x, y_new当作输入, y_trad当作输出
         """
-
-        # 从传统数据中获取与指定类型匹配的键
-        trad_type = None
-        for key in self.trad_data[cls].keys():
-            trad_type = key if key.startswith(type) else trad_type
-
-        # 根据键获取传统数据和新数据
-        trad_data = self.trad_data[cls][trad_type]
-        new_data = self.new_data[cls][type]
-        n = trad_data.shape[0]
-
-        # 生成测试数据索引
-        test_idx = np.linspace(0, n - 1, num=int(ratio * n), endpoint=True).astype(int)
-        train_idx = [i for i in range(n) if i not in test_idx]
-
-        return new_data, trad_data[train_idx], trad_data[test_idx]
+        if seed:
+            random.seed(seed)
+        type_list = list(self.trad_data[cls].keys())
+        test_type = random.sample(type_list, test_num)
+        train_type = [x for x in type_list if x not in test_type]
+        train_data = [
+            np.c_[
+                self.new_data[cls][ty][:, 0],
+                self.new_data[cls][ty][:, 1],
+                self.trad_data[cls][ty][:, 1],
+            ]
+            for ty in train_type
+        ]
+        test_data = [
+            np.c_[
+                self.new_data[cls][ty][:, 0],
+                self.new_data[cls][ty][:, 1],
+                self.trad_data[cls][ty][:, 1],
+            ]
+            for ty in test_type
+        ]
+        return train_data, test_data
