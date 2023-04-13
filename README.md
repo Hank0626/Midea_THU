@@ -14,6 +14,6 @@ This repository contains a data prediction project in collaboration between Tsin
 To run the Gaussian Process prediction model, follow these instructions:
 ```
 cd src
-python3 gaussian_process.py --name data_chu_1a --test_num 100 --iterations 50000 --minibatch_size 100 --lr 0.01
+python3 gaussian_process.py --name data_chu_1a --test_num 100 --iterations 50000 --minibatch_size 100 --lr 0.1
 ```
 
