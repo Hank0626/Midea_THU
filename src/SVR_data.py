@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 
 import numpy as np
 
@@ -111,8 +110,8 @@ class DataAlig(object):
     def __init__(self, k=5, needx=True, needrange=True) -> None:
 
         self.k = k #最邻近的k个点
-        self.needx = needx
-        self.needrange = needrange
+        self.needx = needx # 是否输入最近k个点的频率信息
+        self.needrange = needrange #是否计算最近k个点的极差
 
     # @data_statistics
     def pros_data(self, new, trad):
@@ -172,75 +171,3 @@ class DataAlig(object):
             input = np.concatenate((input, R.reshape(-1, 1)), axis=1)
 
         return input, target
-=======
-
-import numpy as np
-
-# 使用未对其的原始数据
-
-class DataAlig(object):
-
-    def __init__(self, k=5, needx=True, needrange=True) -> None:
-        self.k = k #最邻近的k个点
-        self.needx = needx
-        self.needrange = needrange
-
-    # @data_statistics
-    def pros_data(self, new, trad):
-        """
-        参数:
-            new (N,2): 新设备数据
-            trad (M,2): 旧设备数据
-
-        Returns:
-            input (M,k+1): 旧设备各频率对应新设备的最近K个数据+频率
-            target (M,1): 旧设备数据
-        """
-
-        # 从传统数据中获取与指定类型匹配的键
-        N = new.shape[0]
-        M = trad.shape[0]
-        input = np.zeros((M,self.k))
-        if self.needx :
-            input = np.concatenate((input, input),axis=1)
-        target = trad[:,1]
-        R = np.zeros(M)
-        j=0
-        for i in range(0,M) :
-            x = trad[i,0]
-            # 寻找最近点
-            while j < N-1 and np.abs(new[j,0]-x)>np.abs(new[j+1,0]-x):
-                j = j+1
-            # 最近k个
-            if x<new[j,0]:
-                start = j - int(self.k/2)
-                end = start + self.k
-            else:
-                end = j + int(self.k / 2)+1
-                start = end - self.k
-
-            if start<0:
-                start = 0
-                end = self.k
-            elif end>N:
-                end = N
-                start = N-self.k
-
-            # 计算极差
-            kmax = max(new[start:end, 1])
-            kmin = min(new[start:end, 1])
-            R[i] = kmax-kmin
-
-            if self.needx:
-                list = new[start:end,:].transpose().reshape(-1)
-            else :
-                list = new[start:end, 2].reshape(-1)
-            input[i] = list
-
-        input = np.concatenate((input, trad[:,0].reshape(-1,1)),axis=1)
-
-        if self.needrange :
-            input = np.concatenate((input, R.reshape(-1, 1)), axis=1)
-
-        return input, target
->>>>>>> c78c412de2900af3ebb3032bd4f1c4e97c112707
