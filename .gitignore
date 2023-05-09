@@ -130,3 +130,11 @@ dmypy.json
 
 # mac
 .DS_Store
+
+# GP model
+*.pb
+*.index
+*.data*
+*.log
+
+*.png
