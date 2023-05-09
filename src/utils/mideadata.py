@@ -13,9 +13,9 @@ def data_statistics(f):
         print(kwargs)
         print(f"<========= Loading {kwargs['cls']} =========>")
         print(f"train length: {len(train)=}")
-        print(f"train shape: {train[0].shape=}")
+        print(f"train shape: {train[0][1].shape=}")
         print(f"test length: {len(test)=}")
-        print(f"test shape: {test[0].shape=}")
+        print(f"test shape: {test[0][1].shape=}")
         print(f"<========= Data Loaded =========>")
         time.sleep(3)
         return train, test
@@ -90,19 +90,19 @@ class MideaData(object):
         test_type = random.sample(type_list, test_num)
         train_type = [x for x in type_list if x not in test_type]
         train_data = [
-            np.c_[
-                self.new_data[cls][ty][:, 0],
-                self.new_data[cls][ty][:, 1],
-                self.trad_data[cls][ty][:, 1],
-            ]
-            for ty in train_type
+            (tr, np.c_[
+                self.new_data[cls][tr][:, 0],
+                self.new_data[cls][tr][:, 1],
+                self.trad_data[cls][tr][:, 1],
+            ])
+            for tr in train_type
         ]
         test_data = [
-            np.c_[
-                self.new_data[cls][ty][:, 0],
-                self.new_data[cls][ty][:, 1],
-                self.trad_data[cls][ty][:, 1],
-            ]
-            for ty in test_type
+            (te, np.c_[
+                self.new_data[cls][te][:, 0],
+                self.new_data[cls][te][:, 1],
+                self.trad_data[cls][te][:, 1],
+            ])
+            for te in test_type
         ]
         return train_data, test_data
