@@ -22,13 +22,16 @@ def init_logging(save_dir):
 
 @click.command()
 @click.option("--cls", default="13DKB", help="class name")
-@click.option("--test_num", default=5, help="test data number")
-@click.option("--iterations", default=50000, help="iterations")
+@click.option("--test_num", default=1, help="test data number")
+@click.option("--test_cls", default="1H", help="iterations")
+@click.option("--iterations", default=10000, help="iterations")
 @click.option("--minibatch_size", default=10000, help="minibatch size")
-@click.option("--lr", default=1e-4, help="learning rate")
+@click.option("--lr", default=1e-2, help="learning rate")
 @click.option("--test_interval", default=1000, help="test interval")
 @click.option("--save_dir", default="test", help="output save directory")
-def GP(cls, test_num, iterations, minibatch_size, lr, test_interval, save_dir):
+def GP(
+    cls, test_num, test_cls, iterations, minibatch_size, lr, test_interval, save_dir
+):
     os.makedirs(osp.join("../output", save_dir), exist_ok=True)
     save_dir = osp.join("../output", save_dir)
 
@@ -37,20 +40,20 @@ def GP(cls, test_num, iterations, minibatch_size, lr, test_interval, save_dir):
     init_logging(save_dir)
 
     logging.info(
-        f"{cls=}, {test_num=}, {iterations=}, {minibatch_size=}, {lr=}, {save_dir=}"
+        f"{cls=}, {test_num=}, {test_cls=}, {iterations=}, {minibatch_size=}, {lr=}, {save_dir=}"
     )
 
     data = MideaData()
 
-    train_data, test_data = data.get_data(cls=cls, test_num=test_num, seed=0)
+    train_data, test_data = data.get_data(cls=cls, test_cls=test_cls)
 
-    tr = np.vstack([item[1] for item in train_data])
+    tr = np.vstack([item[1] for item in train_data]).copy()
 
-    tr[:, 0] /= 1e7
+    tr[:, 0] /= 1e6
 
     perm = np.random.permutation(len(tr))
 
-    k = gpflow.kernels.Matern52(lengthscales=[1, 1])
+    k = gpflow.kernels.Matern52(lengthscales=[1, 1], variance=1)
 
     M = 100
 
@@ -80,28 +83,33 @@ def GP(cls, test_num, iterations, minibatch_size, lr, test_interval, save_dir):
         elbo = -training_loss().numpy()
         logging.info(f"Epoch: {step}: {elbo:.2f}")
         if step % test_interval == 0 or step == iterations - 1:
+            logging.info(f"{m.kernel.lengthscales=}, {m.kernel.variance=}")
             logging.info("testing ...")
             os.makedirs(osp.join(save_dir, f"epoch{step}"), exist_ok=True)
-            for te_name, te in test_data:
-                te[:0] /= 1e7
-                mean, _ = m.predict_f(te[:, :2])
+            for te_name, te_data in test_data:
+                te = te_data.copy()
+                te[:, 0] /= 1e6
+                pred_te = te[te[:, 0] >= 230]
+                mean, _ = m.predict_f(pred_te[:, :2])
 
                 _y = mean.numpy().reshape(-1)
 
                 logging.info(f"{te_name=}")
-                logging.info("metrics:[mae | rmse | mape]")
-                logging.info(
-                    "results: ", [np.round(f(_y, te[:, 2]), 3) for f in metrics]
-                )
+                logging.info("metrics:\t [mae | rmse | mape]")
+                res = [np.round(f(_y, pred_te[:, 2]), 3) for f in metrics]
+                logging.info(f"results: \t {res}")
+                plt.figure()
+                plt.clf()
+
                 plt.plot(te[:, 0], te[:, 2], label="ground truth")
-                plt.plot(te[:, 0], _y, label="pred")
+                plt.plot(pred_te[:, 0], _y, label="pred")
                 plt.legend()
                 plt.savefig(osp.join(save_dir, f"epoch{step}", f"{te_name}_pred.png"))
 
                 plt.figure()
                 plt.clf()
 
-                plt.plot(te[:, 0], te[:, 1] - _y, label="error")
+                plt.plot(pred_te[:, 0], pred_te[:, 2] - _y, label="error")
                 plt.legend()
                 plt.savefig(osp.join(save_dir, f"epoch{step}", f"{te_name}_error.png"))
 

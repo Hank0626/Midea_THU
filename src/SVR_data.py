@@ -1,4 +1,3 @@
-
 import numpy as np
 
 # 使用未对其的原始数据
@@ -66,13 +65,15 @@ class MideaData(object):
 
             # 读取传统数据
             for name in os.listdir(cls_path_trad):
-                data = np.genfromtxt(osp.join(cls_path_trad, name), delimiter=";",dtype="float64")
+                data = np.genfromtxt(
+                    osp.join(cls_path_trad, name), delimiter=";", dtype="float64"
+                )
                 data = data[:, ~np.isnan(data).any(axis=0)]
                 self.trad_data[cls][name] = data
 
             # 读取新数据
             for name in os.listdir(cls_path_new):
-                data = np.genfromtxt(osp.join(cls_path_new, name),dtype="float64")
+                data = np.genfromtxt(osp.join(cls_path_new, name), dtype="float64")
                 data = data[~np.isnan(data).any(axis=1), :]
                 data = data[~np.isneginf(data).any(axis=1), :]
                 self.new_data[cls][name] = data
@@ -105,13 +106,12 @@ class MideaData(object):
 
         return new_data, trad_data[train_idx], trad_data[test_idx]
 
+
 class DataAlig(object):
-
     def __init__(self, k=5, needx=True, needrange=True) -> None:
-
-        self.k = k #最邻近的k个点
-        self.needx = needx # 是否输入最近k个点的频率信息
-        self.needrange = needrange #是否计算最近k个点的极差
+        self.k = k  # 最邻近的k个点
+        self.needx = needx  # 是否输入最近k个点的频率信息
+        self.needrange = needrange  # 是否计算最近k个点的极差
 
     # @data_statistics
     def pros_data(self, new, trad):
@@ -128,46 +128,46 @@ class DataAlig(object):
         # 从传统数据中获取与指定类型匹配的键
         N = new.shape[0]
         M = trad.shape[0]
-        input = np.zeros((M,self.k))
-        if self.needx :
-            input = np.concatenate((input, input),axis=1)
-        target = trad[:,1]
+        input = np.zeros((M, self.k))
+        if self.needx:
+            input = np.concatenate((input, input), axis=1)
+        target = trad[:, 1]
         R = np.zeros(M)
-        j=0
-        for i in range(0,M) :
-            x = trad[i,0]
+        j = 0
+        for i in range(0, M):
+            x = trad[i, 0]
             # 寻找最近点
-            while j < N-1 and np.abs(new[j,0]-x)>np.abs(new[j+1,0]-x):
-                j = j+1
+            while j < N - 1 and np.abs(new[j, 0] - x) > np.abs(new[j + 1, 0] - x):
+                j = j + 1
             # 最近k个
-            if x<new[j,0]:
-                start = j - int(self.k/2)
+            if x < new[j, 0]:
+                start = j - int(self.k / 2)
                 end = start + self.k
             else:
-                end = j + int(self.k / 2)+1
+                end = j + int(self.k / 2) + 1
                 start = end - self.k
 
-            if start<0:
+            if start < 0:
                 start = 0
                 end = self.k
-            elif end>N:
+            elif end > N:
                 end = N
-                start = N-self.k
+                start = N - self.k
 
             # 计算极差
             kmax = max(new[start:end, 1])
             kmin = min(new[start:end, 1])
-            R[i] = kmax-kmin
+            R[i] = kmax - kmin
 
             if self.needx:
-                list = new[start:end,:].transpose().reshape(-1)
-            else :
+                list = new[start:end, :].transpose().reshape(-1)
+            else:
                 list = new[start:end, 2].reshape(-1)
             input[i] = list
 
-        input = np.concatenate((input, trad[:,0].reshape(-1,1)),axis=1)
+        input = np.concatenate((input, trad[:, 0].reshape(-1, 1)), axis=1)
 
-        if self.needrange :
+        if self.needrange:
             input = np.concatenate((input, R.reshape(-1, 1)), axis=1)
 
         return input, target

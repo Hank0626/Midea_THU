@@ -70,7 +70,14 @@ class MideaData(object):
                 self.new_data[cls][name] = np.c_[x_trad, y_interpolate]
 
     @data_statistics
-    def get_data(self, cls: str = "13DKB", test_num: int = 3, seed: int = None):
+    def get_data(
+        self,
+        cls: str = "13DKB",
+        test_cls: str = "1H",
+        random_dete: bool = False,
+        test_num: int = 3,
+        seed: int = None,
+    ):
         """
         获取指定分类的训练数据和测试数据。
 
@@ -84,25 +91,32 @@ class MideaData(object):
             test_data (list): 测试数据列表。(20001, 3) 第一列为x, 第二列为y_new, 第三列为y_trad。
             训练目标就是把x, y_new当作输入, y_trad当作输出
         """
-        if seed:
+        if seed != None:
             random.seed(seed)
         type_list = list(self.trad_data[cls].keys())
-        test_type = random.sample(type_list, test_num)
+        test_type = random.sample(type_list, test_num) if random_dete else [test_cls]
+        print(test_type)
         train_type = [x for x in type_list if x not in test_type]
         train_data = [
-            (tr, np.c_[
-                self.new_data[cls][tr][:, 0],
-                self.new_data[cls][tr][:, 1],
-                self.trad_data[cls][tr][:, 1],
-            ])
+            (
+                tr,
+                np.c_[
+                    self.new_data[cls][tr][:, 0],
+                    self.new_data[cls][tr][:, 1],
+                    self.trad_data[cls][tr][:, 1],
+                ],
+            )
             for tr in train_type
         ]
         test_data = [
-            (te, np.c_[
-                self.new_data[cls][te][:, 0],
-                self.new_data[cls][te][:, 1],
-                self.trad_data[cls][te][:, 1],
-            ])
+            (
+                te,
+                np.c_[
+                    self.new_data[cls][te][:, 0],
+                    self.new_data[cls][te][:, 1],
+                    self.trad_data[cls][te][:, 1],
+                ],
+            )
             for te in test_type
         ]
         return train_data, test_data
