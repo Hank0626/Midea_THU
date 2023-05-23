@@ -25,12 +25,13 @@ def init_logging(save_dir):
 @click.option("--test_num", default=1, help="test data number")
 @click.option("--test_cls", default="1H", help="iterations")
 @click.option("--iterations", default=10000, help="iterations")
+@click.option("--induce_num", default=10000, help="inducing points number")
 @click.option("--minibatch_size", default=10000, help="minibatch size")
 @click.option("--lr", default=1e-2, help="learning rate")
 @click.option("--test_interval", default=1000, help="test interval")
 @click.option("--save_dir", default="test", help="output save directory")
 def GP(
-    cls, test_num, test_cls, iterations, minibatch_size, lr, test_interval, save_dir
+    cls, test_num, test_cls, iterations, induce_num, minibatch_size, lr, test_interval, save_dir
 ):
     os.makedirs(osp.join("../output", save_dir), exist_ok=True)
     save_dir = osp.join("../output", save_dir)
@@ -55,7 +56,7 @@ def GP(
 
     k = gpflow.kernels.Matern52(lengthscales=[1, 1], variance=1)
 
-    M = 100
+    M = induce_num
 
     Z = tr[perm[:M]][:, :2].copy()
 
@@ -81,11 +82,11 @@ def GP(
     for step in range(iterations):
         optimization_step()
         elbo = -training_loss().numpy()
-        logging.info(f"Epoch: {step}: {elbo:.2f}")
-        if step % test_interval == 0 or step == iterations - 1:
+        # logging.info(f"Epoch: {step}: {elbo:.2f}")
+        if (step+1) % test_interval == 0 or (step+1) == iterations:
             logging.info(f"{m.kernel.lengthscales=}, {m.kernel.variance=}")
             logging.info("testing ...")
-            os.makedirs(osp.join(save_dir, f"epoch{step}"), exist_ok=True)
+            os.makedirs(osp.join(save_dir, f"epoch{step+1}"), exist_ok=True)
             for te_name, te_data in test_data:
                 te = te_data.copy()
                 te[:, 0] /= 1e6
