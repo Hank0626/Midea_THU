@@ -95,7 +95,7 @@ class MideaData(object):
             random.seed(seed)
         type_list = list(self.trad_data[cls].keys())
         test_type = random.sample(type_list, test_num) if random_dete else [test_cls]
-        print(test_type)
+
         train_type = [x for x in type_list if x not in test_type]
         train_data = [
             (
@@ -120,3 +120,33 @@ class MideaData(object):
             for te in test_type
         ]
         return train_data, test_data
+
+    def expand_data(self, data_ls, n):
+        for k in range(len(data_ls)):
+            data = data_ls[k][1]
+            expanded_data = []
+            for i in range(len(data)):
+                row_data = []
+
+                for j in range(i - n, i + n + 1):
+                    if j < 0:
+                        row_data.append(data[0, 0])
+                        continue
+                    if j >= len(data):
+                        row_data.append(data[len(data) - 1, 0])
+                        continue
+                    row_data.append(data[j, 0])
+
+                for j in range(i - n, i + n + 1):
+                    if j < 0:
+                        row_data.append(data[0, 1])
+                        continue
+                    if j >= len(data):
+                        row_data.append(data[len(data) - 1, 1])
+                        continue
+                    row_data.append(data[j, 1])
+
+                row_data.append(data[i, 2])
+                expanded_data.append(row_data)
+            data_ls[k] = (data_ls[k][0], np.array(expanded_data))
+        return data_ls
