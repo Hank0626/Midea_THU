@@ -26,10 +26,10 @@ def init_logging(save_dir):
 @click.option("--test_cls", default="1H", help="iterations")
 @click.option("--expand_num", default=50, help="expand number")
 @click.option("--iterations", default=20000, help="iterations")
-@click.option("--induce_num", default=1000, help="inducing points number")
-@click.option("--minibatch_size", default=1000, help="minibatch size")
-@click.option("--lr", default=1e-3, help="learning rate")
-@click.option("--test_interval", default=1000, help="test interval")
+@click.option("--induce_num", default=1500, help="inducing points number")
+@click.option("--minibatch_size", default=2000, help="minibatch size")
+@click.option("--lr", default=2e-3, help="learning rate")
+@click.option("--test_interval", default=2000, help="test interval")
 @click.option("--save_dir", default="test5w", help="output save directory")
 def GP(
     cls,
@@ -61,14 +61,14 @@ def GP(
     train_data, test_data = data.expand_data(train_data, expand_num), data.expand_data(
         test_data, expand_num
     )
-    
+
     tr = np.vstack([item[1] for item in train_data]).copy()
 
     tr[:, : 2 * expand_num + 1] /= 1e6
 
     perm = np.random.permutation(len(tr))
 
-    k = gpflow.kernels.Matern52(lengthscales=[100] * (4 * expand_num + 2), variance=100)
+    k = gpflow.kernels.Matern52(lengthscales=[50] * (4 * expand_num + 2), variance=20)
 
     M = induce_num
 
@@ -144,11 +144,19 @@ def GP(
             if step != 0:
                 m.compiled_predict_f = tf.function(
                     lambda Xnew: m.predict_f(Xnew, full_cov=False),
-                    input_signature=[tf.TensorSpec(shape=[None, 4 * expand_num + 2], dtype=tf.float64)],
+                    input_signature=[
+                        tf.TensorSpec(
+                            shape=[None, 4 * expand_num + 2], dtype=tf.float64
+                        )
+                    ],
                 )
                 m.compiled_predict_y = tf.function(
                     lambda Xnew: m.predict_y(Xnew, full_cov=False),
-                    input_signature=[tf.TensorSpec(shape=[None, 4 * expand_num + 2], dtype=tf.float64)],
+                    input_signature=[
+                        tf.TensorSpec(
+                            shape=[None, 4 * expand_num + 2], dtype=tf.float64
+                        )
+                    ],
                 )
                 os.makedirs(osp.join(save_dir, f"epoch{step}", "model"), exist_ok=True)
                 tf.saved_model.save(m, osp.join(save_dir, f"epoch{step}", "model"))
