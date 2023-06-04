@@ -24,12 +24,12 @@ def init_logging(save_dir):
 @click.option("--cls", default="13DKB", help="class name")
 @click.option("--test_num", default=1, help="test data number")
 @click.option("--test_cls", default="1H", help="iterations")
-@click.option("--expand_num", default=50, help="expand number")
-@click.option("--iterations", default=20000, help="iterations")
-@click.option("--induce_num", default=1500, help="inducing points number")
+@click.option("--expand_num", default=100, help="expand number")
+@click.option("--iterations", default=8000, help="iterations")
+@click.option("--induce_num", default=1000, help="inducing points number")
 @click.option("--minibatch_size", default=2000, help="minibatch size")
-@click.option("--lr", default=2e-3, help="learning rate")
-@click.option("--test_interval", default=2000, help="test interval")
+@click.option("--lr", default=1e-2, help="learning rate")
+@click.option("--test_interval", default=1000, help="test interval")
 @click.option("--save_dir", default="test5w", help="output save directory")
 def GP(
     cls,
@@ -68,7 +68,7 @@ def GP(
 
     perm = np.random.permutation(len(tr))
 
-    k = gpflow.kernels.Matern52(lengthscales=[50] * (4 * expand_num + 2), variance=20)
+    k = gpflow.kernels.Matern52(lengthscales=[50] * (4 * expand_num + 2), variance=1e2) + gpflow.kernels.White(variance=1e2)
 
     M = induce_num
 
@@ -102,7 +102,7 @@ def GP(
         if step % 100 == 0:
             logging.info(f"Epoch: {step}: {elbo:.2f}")
         if step % test_interval == 0 or (step + 1) == iterations:
-            logging.info(f"{m.kernel.lengthscales=}, {m.kernel.variance=}")
+            logging.info(f"{m.kernel.variables=}")
             logging.info("testing ...")
             os.makedirs(osp.join(save_dir, f"epoch{step}"), exist_ok=True)
             for te_name, te_data in test_data:
