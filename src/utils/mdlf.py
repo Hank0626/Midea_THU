@@ -1,7 +1,7 @@
 import os
 import os.path as osp
 import numpy as np
-from scipy.interpolate import interp1d
+
 import random
 import time
 
@@ -23,7 +23,7 @@ def data_statistics(f):
     return wrapper
 
 
-class MideaData(object):
+class MideaDataLF(object):
     """
     美的数据类，用于处理和存储从不同文件中加载的数据。
     该类分别处理传统数据和新数据，并将它们存储为字典。
@@ -39,16 +39,22 @@ class MideaData(object):
     """
 
     def __init__(self) -> None:
-        self.data_path = "../data/"
+        self.data_path = "../data/MD_dataset"
         self.cls = ["13DKB"]
         self.trad_data = dict()
         self.new_data = dict()
+        self.trad_data_test = dict()
+        self.new_data_test = dict()
         for cls in self.cls:
             self.trad_data[cls] = dict()
             self.new_data[cls] = dict()
-            cls_path_trad = osp.join(self.data_path, "{}_trad".format(cls))
-            cls_path_new = osp.join(self.data_path, "{}_new".format(cls))
-
+            self.trad_data_test[cls] = dict()
+            self.new_data_test[cls] = dict()
+            cls_path_trad = osp.join(self.data_path, "{}_trad_align_mount".format(cls))
+            cls_path_new = osp.join(self.data_path, "{}_new_align_mount".format(cls))
+            cls_path_trad_test = osp.join(self.data_path, "{}_trad".format(cls))
+            cls_path_new_test = osp.join(self.data_path, "{}_new_align".format(cls))
+            
             for name in sorted(os.listdir(cls_path_trad)):
                 if name.startswith("."):
                     continue
@@ -56,20 +62,31 @@ class MideaData(object):
                 data = data[:, ~np.isnan(data).any(axis=0)]
                 self.trad_data[cls][name] = data
 
-            # 读取新数据并线性插值，使其对齐传统数据
             for name in sorted(os.listdir(cls_path_new)):
                 if name.startswith("."):
                     continue
-                data = np.genfromtxt(osp.join(cls_path_new, name))
+                data = np.genfromtxt(osp.join(cls_path_new, name), delimiter=";")
                 data = data[~np.isnan(data).any(axis=1), :]
                 data = data[np.isfinite(data).all(axis=1), :]
-                x, y = data[:, 0], data[:, 1]
-                f = interp1d(x, y, kind="linear", fill_value="extrapolate")
-                x_trad = self.trad_data[cls][name][:, 0]
-                y_interpolate = f(x_trad)
-                self.new_data[cls][name] = np.c_[x_trad, y_interpolate]
+                self.new_data[cls][name] = data
 
-    # @data_statistics
+            for name in sorted(os.listdir(cls_path_trad_test)):
+                if name.startswith("."):
+                    continue
+                data = np.genfromtxt(osp.join(cls_path_trad_test, name), delimiter=";")
+                data = data[:, ~np.isnan(data).any(axis=0)]
+                self.trad_data_test[cls][name] = data
+
+            for name in sorted(os.listdir(cls_path_new_test)):
+                if name.startswith("."):
+                    continue
+                data = np.genfromtxt(osp.join(cls_path_new_test, name), delimiter=";")
+                data = data[~np.isnan(data).any(axis=1), :]
+                data = data[np.isfinite(data).all(axis=1), :]
+                self.new_data_test[cls][name] = data
+                
+
+    @data_statistics
     def get_data(
         self,
         cls: str = "13DKB",
@@ -112,9 +129,9 @@ class MideaData(object):
             (
                 te,
                 np.c_[
-                    self.new_data[cls][te][:, 0],
-                    self.new_data[cls][te][:, 1],
-                    self.trad_data[cls][te][:, 1],
+                    self.new_data_test[cls][te][:, 0],
+                    self.new_data_test[cls][te][:, 1],
+                    self.trad_data_test[cls][te][:, 1],
                 ],
             )
             for te in test_type

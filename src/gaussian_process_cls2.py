@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf
 import gpflow
 import matplotlib.pyplot as plt
-from utils.mideadata import MideaData
+from utils.mdlf import MideaDataLF
 from utils.evaluate import np_mae, np_mape, np_rmse
 import logging
 import click
@@ -24,12 +24,12 @@ def init_logging(save_dir):
 @click.option("--cls", default="13DKB", help="class name")
 @click.option("--test_num", default=1, help="test data number")
 @click.option("--test_cls", default="1H", help="iterations")
-@click.option("--expand_num", default=100, help="expand number")
-@click.option("--iterations", default=10000, help="iterations")
+@click.option("--expand_num", default=50, help="expand number")
+@click.option("--iterations", default=20000, help="iterations")
 @click.option("--induce_num", default=1500, help="inducing points number")
 @click.option("--minibatch_size", default=2000, help="minibatch size")
-@click.option("--lr", default=1e-2, help="learning rate")
-@click.option("--test_interval", default=1000, help="test interval")
+@click.option("--lr", default=2e-3, help="learning rate")
+@click.option("--test_interval", default=2000, help="test interval")
 @click.option("--save_dir", default="test5w", help="output save directory")
 def GP(
     cls,
@@ -54,7 +54,7 @@ def GP(
         f"{cls=}, {test_num=}, {test_cls=}, {expand_num=}, {induce_num=}, {iterations=}, {minibatch_size=}, {lr=}, {save_dir=}"
     )
 
-    data = MideaData()
+    data = MideaDataLF()
 
     train_data, test_data = data.get_data(cls=cls, test_cls=test_cls)
 
@@ -109,37 +109,69 @@ def GP(
                 te = te_data.copy()
 
                 te[:, : 2 * expand_num + 1] /= 1e6
-                pred_te = te[te[:, expand_num] >= 320]
-                mean, _ = m.predict_f(pred_te[:, : 4 * expand_num + 2])
+                
+                pred_te_1 = te[te[:, expand_num] < 320]
+                pred_te_2 = te[te[:, expand_num] >= 320]
+                
+                mean_1, _ = m.predict_f(pred_te_1[:, : 4 * expand_num + 2])
+                mean_2, _ = m.predict_f(pred_te_2[:, : 4 * expand_num + 2])
 
-                _y = mean.numpy().reshape(-1)
+                _y_1 = mean_1.numpy().reshape(-1)
+                _y_2 = mean_2.numpy().reshape(-1)
 
                 logging.info(f"{te_name=}")
                 logging.info("metrics:\t [mae | rmse | mape]")
                 res = [
-                    np.round(f(_y, pred_te[:, 4 * expand_num + 2]), 3) for f in metrics
+                    np.round(f(_y_1, pred_te_1[:, 4 * expand_num + 2]), 3) for f in metrics
                 ]
-                logging.info(f"results: \t {res}")
+                logging.info(f"(<30%) results: \t {res}")
+                res = [
+                    np.round(f(_y_2, pred_te_2[:, 4 * expand_num + 2]), 3) for f in metrics
+                ]
+                logging.info(f"(>30%) results: \t {res}")
+
                 plt.figure()
                 plt.clf()
 
                 plt.plot(
                     te[:, expand_num], te[:, 4 * expand_num + 2], label="ground truth"
                 )
-                plt.plot(pred_te[:, expand_num], _y, label="pred")
+                plt.plot(pred_te_1[:, expand_num], _y_1, label="pred")
                 plt.legend()
-                plt.savefig(osp.join(save_dir, f"epoch{step}", f"{te_name}_pred.png"))
+                plt.savefig(osp.join(save_dir, f"epoch{step}", f"<30_{te_name}_pred.png"))
 
                 plt.figure()
                 plt.clf()
 
                 plt.plot(
-                    pred_te[:, expand_num],
-                    pred_te[:, 4 * expand_num + 2] - _y,
+                    te[:, expand_num], te[:, 4 * expand_num + 2], label="ground truth"
+                )
+                plt.plot(pred_te_2[:, expand_num], _y_2, label="pred")
+                plt.legend()
+                plt.savefig(osp.join(save_dir, f"epoch{step}", f">30_{te_name}_pred.png"))
+
+
+                plt.figure()
+                plt.clf()
+
+                plt.plot(
+                    pred_te_1[:, expand_num],
+                    pred_te_1[:, 4 * expand_num + 2] - _y_1,
                     label="error",
                 )
                 plt.legend()
-                plt.savefig(osp.join(save_dir, f"epoch{step}", f"{te_name}_error.png"))
+                plt.savefig(osp.join(save_dir, f"epoch{step}", f"<30_{te_name}_error.png"))
+                
+                plt.figure()
+                plt.clf()
+
+                plt.plot(
+                    pred_te_2[:, expand_num],
+                    pred_te_2[:, 4 * expand_num + 2] - _y_2,
+                    label="error",
+                )
+                plt.legend()
+                plt.savefig(osp.join(save_dir, f"epoch{step}", f">30_{te_name}_error.png"))
 
             if step != 0:
                 m.compiled_predict_f = tf.function(
