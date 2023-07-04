@@ -18,7 +18,6 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 import pandas as pd
 from openpyxl import load_workbook
 
-# test git
 def get_dataset(test=1, test_range=[0, 6000], win=7, num_mount=20, scale=1):
     data = MideaData(align=False, scale=scale)
     data.gen_mount_data(win=win, num_mount=num_mount)
