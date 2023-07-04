@@ -130,3 +130,8 @@ dmypy.json
 
 # mac
 .DS_Store
+data
+data_1
+output
+*.xlsx
+*.png

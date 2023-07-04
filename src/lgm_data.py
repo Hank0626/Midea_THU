@@ -345,3 +345,4 @@ if __name__ == '__main__':
     data = MideaData(align=False)
     data.gen_mount_data(win=7, num_mount=20)
     data.plot_data()
+    
