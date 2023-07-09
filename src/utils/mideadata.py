@@ -36,6 +36,7 @@ class MideaData(object):
 
     方法:
         get_data(cls, test_num, seed): 返回经过处理的训练数据和测试数据。
+        expand_data(self, data_ls, n): 用于按列进行数据扩充
     """
 
     def __init__(self) -> None:

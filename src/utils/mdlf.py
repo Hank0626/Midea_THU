@@ -39,7 +39,7 @@ class MideaDataLF(object):
     """
 
     def __init__(self) -> None:
-        self.data_path = "../data/MD_dataset"
+        self.data_path = "../data/MD_dataset_2"
         self.cls = ["13DKB"]
         self.trad_data = dict()
         self.new_data = dict()
@@ -50,8 +50,8 @@ class MideaDataLF(object):
             self.new_data[cls] = dict()
             self.trad_data_test[cls] = dict()
             self.new_data_test[cls] = dict()
-            cls_path_trad = osp.join(self.data_path, "{}_trad_align_mount".format(cls))
-            cls_path_new = osp.join(self.data_path, "{}_new_align_mount".format(cls))
+            cls_path_trad = osp.join(self.data_path, "{}_trad_align_mount_abs".format(cls))
+            cls_path_new = osp.join(self.data_path, "{}_new_align_mount_abs".format(cls))
             cls_path_trad_test = osp.join(self.data_path, "{}_trad".format(cls))
             cls_path_new_test = osp.join(self.data_path, "{}_new_align".format(cls))
             

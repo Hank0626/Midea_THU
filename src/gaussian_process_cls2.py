@@ -24,11 +24,11 @@ def init_logging(save_dir):
 @click.option("--cls", default="13DKB", help="class name")
 @click.option("--test_num", default=1, help="test data number")
 @click.option("--test_cls", default="1H", help="iterations")
-@click.option("--expand_num", default=50, help="expand number")
-@click.option("--iterations", default=20000, help="iterations")
-@click.option("--induce_num", default=1500, help="inducing points number")
+@click.option("--expand_num", default=5, help="expand number")
+@click.option("--iterations", default=50000, help="iterations")
+@click.option("--induce_num", default=1000, help="inducing points number")
 @click.option("--minibatch_size", default=2000, help="minibatch size")
-@click.option("--lr", default=2e-3, help="learning rate")
+@click.option("--lr", default=1e-2, help="learning rate")
 @click.option("--test_interval", default=2000, help="test interval")
 @click.option("--save_dir", default="test5w", help="output save directory")
 def GP(
@@ -58,17 +58,20 @@ def GP(
 
     train_data, test_data = data.get_data(cls=cls, test_cls=test_cls)
 
+    # [x * 101, trad * 101, new]
+
     train_data, test_data = data.expand_data(train_data, expand_num), data.expand_data(
         test_data, expand_num
     )
 
     tr = np.vstack([item[1] for item in train_data]).copy()
 
-    tr[:, : 2 * expand_num + 1] /= 1e6
+    # tr[:, : 2 * expand_num + 1] /= 1e6
+    tr[:, : 4 * expand_num + 2] = (tr[:, : 4 * expand_num + 2] - tr[:, : 4 * expand_num + 2].min(axis=0)) / (tr[:, : 4 * expand_num + 2].max(axis=0) - tr[:, : 4 * expand_num + 2].min(axis=0))
 
     perm = np.random.permutation(len(tr))
 
-    k = gpflow.kernels.Matern52(lengthscales=[50] * (4 * expand_num + 2), variance=1e2) + gpflow.kernels.White(variance=1e2)
+    k = gpflow.kernels.Matern52(lengthscales=[100] * (4 * expand_num + 2), variance=1e2) # + gpflow.kernels.White(variance=1e2)
 
     M = induce_num
 
@@ -113,6 +116,12 @@ def GP(
                 pred_te_1 = te[te[:, expand_num] < 320]
                 pred_te_2 = te[te[:, expand_num] >= 320]
                 
+                min_1, max_1 = pred_te_1[:, : 4 * expand_num + 2].min(axis=0), pred_te_1[:, : 4 * expand_num + 2].max(axis=0)
+                min_2, max_2 = pred_te_2[:, : 4 * expand_num + 2].min(axis=0), pred_te_2[:, : 4 * expand_num + 2].max(axis=0)
+
+                pred_te_1[:, : 4 * expand_num + 2] = (pred_te_1[:, : 4 * expand_num + 2] - min_1) / (max_1 - min_1)
+                pred_te_2[:, : 4 * expand_num + 2] = (pred_te_2[:, : 4 * expand_num + 2] - min_2) / (max_2 - min_2)
+                
                 mean_1, _ = m.predict_f(pred_te_1[:, : 4 * expand_num + 2])
                 mean_2, _ = m.predict_f(pred_te_2[:, : 4 * expand_num + 2])
 
@@ -136,7 +145,7 @@ def GP(
                 plt.plot(
                     te[:, expand_num], te[:, 4 * expand_num + 2], label="ground truth"
                 )
-                plt.plot(pred_te_1[:, expand_num], _y_1, label="pred")
+                plt.plot(pred_te_1[:, expand_num] * (max_1[expand_num] - min_1[expand_num]) + min_1[expand_num], _y_1, label="pred")
                 plt.legend()
                 plt.savefig(osp.join(save_dir, f"epoch{step}", f"<30_{te_name}_pred.png"))
 
@@ -146,32 +155,32 @@ def GP(
                 plt.plot(
                     te[:, expand_num], te[:, 4 * expand_num + 2], label="ground truth"
                 )
-                plt.plot(pred_te_2[:, expand_num], _y_2, label="pred")
+                plt.plot(pred_te_2[:, expand_num] * (max_2[expand_num] - min_2[expand_num]) + min_2[expand_num], _y_2, label="pred")
                 plt.legend()
                 plt.savefig(osp.join(save_dir, f"epoch{step}", f">30_{te_name}_pred.png"))
 
 
-                plt.figure()
-                plt.clf()
+                # plt.figure()
+                # plt.clf()
 
-                plt.plot(
-                    pred_te_1[:, expand_num],
-                    pred_te_1[:, 4 * expand_num + 2] - _y_1,
-                    label="error",
-                )
-                plt.legend()
-                plt.savefig(osp.join(save_dir, f"epoch{step}", f"<30_{te_name}_error.png"))
+                # plt.plot(
+                #     pred_te_1[:, expand_num],
+                #     pred_te_1[:, 4 * expand_num + 2] - _y_1,
+                #     label="error",
+                # )
+                # plt.legend()
+                # plt.savefig(osp.join(save_dir, f"epoch{step}", f"<30_{te_name}_error.png"))
                 
-                plt.figure()
-                plt.clf()
+                # plt.figure()
+                # plt.clf()
 
-                plt.plot(
-                    pred_te_2[:, expand_num],
-                    pred_te_2[:, 4 * expand_num + 2] - _y_2,
-                    label="error",
-                )
-                plt.legend()
-                plt.savefig(osp.join(save_dir, f"epoch{step}", f">30_{te_name}_error.png"))
+                # plt.plot(
+                #     pred_te_2[:, expand_num],
+                #     pred_te_2[:, 4 * expand_num + 2] - _y_2,
+                #     label="error",
+                # )
+                # plt.legend()
+                # plt.savefig(osp.join(save_dir, f"epoch{step}", f">30_{te_name}_error.png"))
 
             if step != 0:
                 m.compiled_predict_f = tf.function(
