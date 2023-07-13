@@ -75,7 +75,7 @@ def main():
         "gpu_platform_id": 0,
         "verbose": -1,
     }
-    for s in [1.5]:
+    for s in [1]:
         win = 15
         num_mount = 30
         scale = s
@@ -84,12 +84,14 @@ def main():
         former_mae, latter_mae = [], []
         former_mape, latter_mape = [], []
         former_rmse, latter_rmse = [], []
-        for t in range(1, 14):
-        # for t in [2]:
+        # for t in range(1, 14):
+        for t in [2]:
             for test_range in ([0, 6000], [6000, 20000]):
                 train_data, test_x, test_y = get_dataset(test=t, test_range=test_range, win=win, num_mount=num_mount, scale=scale)
                 model = lgb.train(params, train_data)
                 pre = model.predict(test_x)
+
+                model.save_model('lgm_params_{}.txt'.format(t))
 
 
                 mae = np_mae(pre, test_y)
