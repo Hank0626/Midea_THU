@@ -39,9 +39,9 @@ class MideaData(object):
         expand_data(self, data_ls, n): 用于按列进行数据扩充, n为扩充倍数。
     """
 
-    def __init__(self) -> None:
+    def __init__(self, cls=["13DKB"]) -> None:
         self.data_path = "../data/"
-        self.cls = ["13DKB"]
+        self.cls = cls
         self.trad_data = dict()
         self.new_data = dict()
         for cls in self.cls:
@@ -65,6 +65,8 @@ class MideaData(object):
                 data = data[~np.isnan(data).any(axis=1), :]
                 data = data[np.isfinite(data).all(axis=1), :]
                 x, y = data[:, 0], data[:, 1]
+                if self.cls[0] == "13DKB2":
+                    x /= 1e6
                 f = interp1d(x, y, kind="linear", fill_value="extrapolate")
                 x_trad = self.trad_data[cls][name][:, 0]
                 y_interpolate = f(x_trad)
