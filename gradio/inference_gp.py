@@ -6,7 +6,8 @@ from utils import np_mae, np_rmse, np_mape
 
 metrics = [np_mae, np_rmse, np_mape]
 
-model_path = "../model/lpy/model"
+# model_path = "../model/lpy/model"
+model_path = "/data3/liupeiyuan/Midea_THU/output/type1_mount_0716/model/epoch8500"
 
 def expand_data(data, n):
     expanded_data = []
@@ -48,7 +49,7 @@ def gp_infer(trad, new):
 
     model = tf.saved_model.load(model_path)
 
-    mean, var = model.compiled_predict_f(expand_data(data, 50)[:, :-1])
+    mean, var = model.compiled_predict_f(expand_data(data, 5)[:, :-1])
 
     y = mean.numpy().reshape(-1)
 

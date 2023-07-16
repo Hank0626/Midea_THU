@@ -15,7 +15,8 @@ def data_statistics(f):
         print(f"train length: {len(train)=}")
         print(f"train shape: {train[0][1].shape=}")
         print(f"test length: {len(test)=}")
-        print(f"test shape: {test[0][1].shape=}")
+        if len(test) > 0:
+            print(f"test shape: {test[0][1].shape=}")   
         print(f"<========= Data Loaded =========>")
         time.sleep(3)
         return train, test
@@ -112,6 +113,9 @@ class MideaDataLF(object):
             random.seed(seed)
         type_list = list(self.trad_data[cls].keys())
         test_type = random.sample(type_list, test_num) if random_dete else [test_cls]
+
+        if test_cls == "None":
+            test_type = []
 
         train_type = [x for x in type_list if x not in test_type]
         train_data = [
