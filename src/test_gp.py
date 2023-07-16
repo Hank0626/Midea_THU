@@ -2,34 +2,38 @@ import os
 import os.path as osp
 import numpy as np
 import tensorflow as tf
+import matplotlib.pyplot as plt
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 tf.get_logger().setLevel('ERROR')
 import pdb
 
-res_dir = "../output/gp_0602"
-last_epoch = 19999
-expand_num = 50
+res_dir = "../output/type2_0714/"
+save_dir = "./res"
+last_epoch = 3000
+expand_num = 5
 from utils.mideadata import MideaData
 from utils.evaluate import np_mae, np_mape, np_rmse
 metrics = [np_mae, np_mape, np_rmse]
 
+os.makedirs(save_dir, exist_ok=True)
 for cls in sorted(os.listdir(res_dir)):
-    cls_model_res_dir = osp.join(res_dir, cls, f"epoch{last_epoch}", "model")
+    cls_model_res_dir = osp.join(res_dir, cls, "model", f"epoch{last_epoch}")
     m = tf.saved_model.load(cls_model_res_dir)
-    
-    data = MideaData()
-    _, test_data = data.get_data(cls="13DKB", test_cls=cls)
+
+    data = MideaData(cls=["13DKB2"])
+    _, test_data = data.get_data(cls="13DKB2", test_cls=cls)
     test_data = data.expand_data(test_data, expand_num)
 
     for te_name, te_data in test_data:
         te = te_data.copy()
 
-        te[:, : 2 * expand_num + 1] /= 1e6
         pred_te_1 = te[te[:, expand_num] < 320]
         pred_te_2 = te[te[:, expand_num] >= 320]
         
         mean_1, _ = m.compiled_predict_f(pred_te_1[:, : 4 * expand_num + 2])
         mean_2, _ = m.compiled_predict_f(pred_te_2[:, : 4 * expand_num + 2])
+        mean, var = m.compiled_predict_f(te[:, : 4 * expand_num + 2])
+        mean, var = mean.numpy().reshape(-1), var.numpy().reshape(-1)
 
         _y_1 = mean_1.numpy().reshape(-1)
         _y_2 = mean_2.numpy().reshape(-1)
@@ -44,23 +48,27 @@ for cls in sorted(os.listdir(res_dir)):
             np.round(f(_y_2, pred_te_2[:, 4 * expand_num + 2]), 3) for f in metrics
         ]
         print(f"results: \t {res_2}")
-        # plt.figure()
-        # plt.clf()
 
-        # plt.plot(
-        #     te[:, expand_num], te[:, 4 * expand_num + 2], label="ground truth"
-        # )
-        # plt.plot(pred_te[:, expand_num], _y, label="pred")
-        # plt.legend()
-        # plt.savefig(osp.join(save_dir, f"epoch{step}", f"{te_name}_pred.png"))
+        with open(os.path.join(save_dir, "res.txt"), "a") as f:
+            f.write(f"{te_name}\n")
+            f.write(f"{res_1}\n")
+            f.write(f"{res_2}\n")
+            f.write("\n")
 
-        # plt.figure()
-        # plt.clf()
+        plt.figure()
+        plt.clf()
 
-        # plt.plot(
-        #     pred_te[:, expand_num],
-        #     pred_te[:, 4 * expand_num + 2] - _y,
-        #     label="error",
-        # )
-        # plt.legend()
-        # plt.savefig(osp.join(save_dir, f"epoch{step}", f"{te_name}_error.png"))
+        plt.plot(
+            te[:, expand_num], te[:, 4 * expand_num + 2], label="ground truth", alpha=0.5
+        )
+        plt.plot(te[:, expand_num], mean, label="pred", alpha=0.7)
+        plt.fill_between(
+            te[:, expand_num],
+            np.ravel(mean + 2 * np.sqrt(var)),
+            np.ravel(mean - 2 * np.sqrt(var)),
+            alpha=0.3,
+            color="red",
+            label="95% Confidence Interval",
+        )
+        plt.legend()
+        plt.savefig(osp.join(save_dir, f"{te_name}_pred.png"))

@@ -33,4 +33,4 @@ def svr_infer(trad, new):
 
     y = np.concatenate((pre1, pre2), axis=0)
 
-    return data[:, 0], data[:, 2], y, 0
+    return data[:, 0], y_interpolate, data[:, 2], y, 0

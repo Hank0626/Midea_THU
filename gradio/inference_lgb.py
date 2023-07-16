@@ -20,5 +20,5 @@ def lgb_infer(trad, new):
 
     y = model.predict(new_align, num_iteration=model.best_iteration)
     
-    return trad[:, 0], trad[:, 1], y, 0
+    return trad[:, 0], y_new, trad[:, 1], y, 0
 

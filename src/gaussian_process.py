@@ -29,7 +29,7 @@ def init_logging(save_dir):
 @click.option("--induce_num", default=1500, help="inducing points number")
 @click.option("--minibatch_size", default=1000, help="minibatch size")
 @click.option("--lr", default=5e-2, help="learning rate")
-@click.option("--test_interval", default=100, help="test interval")
+@click.option("--test_interval", default=1000, help="test interval")
 @click.option("--save_dir", default="test", help="output save directory")
 def GP(
     cls,
@@ -55,7 +55,7 @@ def GP(
         f"{cls=}, {test_num=}, {test_cls=}, {expand_num=}, {induce_num=}, {iterations=}, {minibatch_size=}, {lr=}, {save_dir=}"
     )
 
-    data = MideaData(cls=["13DKB2"])
+    data = MideaData(cls=["13DKB"])
 
     train_data, test_data = data.get_data(cls=cls, test_cls=test_cls)
 

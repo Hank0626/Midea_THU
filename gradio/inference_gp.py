@@ -52,4 +52,4 @@ def gp_infer(trad, new):
 
     y = mean.numpy().reshape(-1)
 
-    return data[:, 0], data[:, 2], y, var.numpy().reshape(-1)
+    return data[:, 0], y_interpolate, data[:, 2], y, var.numpy().reshape(-1)

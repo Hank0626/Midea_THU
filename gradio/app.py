@@ -43,8 +43,8 @@ def create_html_table(data1, data2):
     rows2 = "<tr><td>后70%</td>" + "".join(f"<td>{item}</td>" for item in data2) + "</tr>"
     return f"{table}<table>{headers}{rows1}{rows2}</table>"
 
-def plot_result(x, gt, y, var, model_choice=None):
-    fig = plt.figure()
+def plot_result(x, input, gt, y, var, model_choice=None):
+    fig = plt.figure(dpi=300)
 
     if model_choice == "Gaussian Process":
         plt.fill_between(
@@ -52,18 +52,19 @@ def plot_result(x, gt, y, var, model_choice=None):
             np.ravel(y + 2 * np.sqrt(var)),
             np.ravel(y - 2 * np.sqrt(var)),
             alpha=0.3,
-            color="C0",
+            color="orange",
             label="95% Confidence Interval",
         )
 
-    plt.plot(x, gt, label="gt", alpha=0.8)
-    plt.plot(x, y, label="pred", alpha=0.8)
+    plt.plot(x, gt, label="gt", alpha=0.7)
+    plt.plot(x, y, label="pred", alpha=0.7)
+    plt.plot(x, input, label="trad", alpha=0.7)
     plt.axvline(x[int(.3*len(x))], color='red', linestyle='--', label="30% line")
 
     plt.xlabel("Frequency")
     plt.ylabel("Power")
     
-    plt.legend(loc="lower right")
+    plt.legend(loc="best")
 
     return fig
 
@@ -79,7 +80,7 @@ def main_function(model_choice, file1, file2):
     elif model_choice == "LightGBM":
         res = lgb_infer(file1, file2)
     
-    gt, pred, l = res[1], res[2], len(res[1])
+    gt, pred, l = res[2], res[3], len(res[1])
     
     fst_metric = [m(gt[:int(.3*l)], pred[:int(.3*l)]) for m in metrics]
     sec_metric = [m(gt[int(.3*l):], pred[int(.3*l):]) for m in metrics]
@@ -101,10 +102,10 @@ iface = gr.Interface(
         ["Gaussian Process", "../data/13DKB_trad/1V", "../data/13DKB_new/1V"],
         ["Gaussian Process", "../data/13DKB_trad/2H", "../data/13DKB_new/2H"],
         ["Gaussian Process", "../data/13DKB_trad/2V", "../data/13DKB_new/2V"],
-        ["Light GBM", "../data/13DKB_trad/1H", "../data/13DKB_new/1H"],
-        ["Light GBM", "../data/13DKB_trad/1V", "../data/13DKB_new/1V"],
-        ["Light GBM", "../data/13DKB_trad/2H", "../data/13DKB_new/2H"],
-        ["Light GBM", "../data/13DKB_trad/2V", "../data/13DKB_new/2V"],
+        ["LightGBM", "../data/13DKB_trad/1H", "../data/13DKB_new/1H"],
+        ["LightGBM", "../data/13DKB_trad/1V", "../data/13DKB_new/1V"],
+        ["LightGBM", "../data/13DKB_trad/2H", "../data/13DKB_new/2H"],
+        ["LightGBM", "../data/13DKB_trad/2V", "../data/13DKB_new/2V"],
         ["SVR", "../data/13DKB_trad/1H", "../data/13DKB_new/1H"],
         ["SVR", "../data/13DKB_trad/1V", "../data/13DKB_new/1V"],
         ["SVR", "../data/13DKB_trad/2H", "../data/13DKB_new/2H"],
@@ -115,4 +116,4 @@ iface = gr.Interface(
     title=TITLE,
     description=DESCRIPTION,
 )
-iface.launch()
+iface.launch(share=True)
