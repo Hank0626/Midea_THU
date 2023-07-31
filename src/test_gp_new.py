@@ -7,20 +7,21 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 tf.get_logger().setLevel('ERROR')
 import pdb
 
-res_dir = "../output/type1_mount_0716/model/epoch8500"
+model = "../output/type1_mount_0716/model/epoch8500"
 save_dir = "./res"
-last_epoch = 3000
+
 expand_num = 5
 from utils.mideadata import MideaData
 from utils.evaluate import np_mae, np_mape, np_rmse
 metrics = [np_mae, np_mape, np_rmse]
 
 os.makedirs(save_dir, exist_ok=True)
-for cls in sorted(os.listdir(res_dir)):
-    cls_model_res_dir = osp.join(res_dir, cls, "model", f"epoch{last_epoch}")
-    m = tf.saved_model.load(cls_model_res_dir)
 
-    data = MideaData(cls=["13DKB2"])
+m = tf.saved_model.load(model)
+
+data = MideaData(cls=["13DKB2"])
+cls_ls = sorted(data.trad_data["13DKB2"].keys(), key=lambda x: int(x[:-1]))
+for cls in cls_ls:
     _, test_data = data.get_data(cls="13DKB2", test_cls=cls)
     test_data = data.expand_data(test_data, expand_num)
 
@@ -55,13 +56,14 @@ for cls in sorted(os.listdir(res_dir)):
             f.write(f"{res_2}\n")
             f.write("\n")
 
-        plt.figure()
+        plt.figure(dpi=200)
         plt.clf()
 
         plt.plot(
             te[:, expand_num], te[:, 4 * expand_num + 2], label="ground truth", alpha=0.5
         )
-        plt.plot(te[:, expand_num], mean, label="pred", alpha=0.7)
+        plt.plot(te[:, expand_num], mean, label="pred", alpha=0.5)
+        plt.plot(te[:, expand_num], te[:, 3 * expand_num + 1], label="input", alpha=0.5)
         plt.fill_between(
             te[:, expand_num],
             np.ravel(mean + 2 * np.sqrt(var)),
@@ -70,5 +72,6 @@ for cls in sorted(os.listdir(res_dir)):
             color="red",
             label="95% Confidence Interval",
         )
+        plt.title(f"{te_name}")
         plt.legend()
         plt.savefig(osp.join(save_dir, f"{te_name}_pred.png"))

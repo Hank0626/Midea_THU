@@ -26,7 +26,7 @@ def init_logging(save_dir):
 @click.option("--test_num", default=1, help="test data number")
 @click.option("--test_cls", default="1H", help="iterations")
 @click.option("--expand_num", default=5, help="expand number")
-@click.option("--iterations", default=30000, help="iterations")
+@click.option("--iterations", default=10000, help="iterations")
 @click.option("--induce_num", default=1500, help="inducing points number")
 @click.option("--minibatch_size", default=2000, help="minibatch size")
 @click.option("--lr", default=1e-3, help="learning rate")
@@ -56,22 +56,24 @@ def GP(
         f"{cls=}, {test_num=}, {test_cls=}, {expand_num=}, {induce_num=}, {iterations=}, {minibatch_size=}, {lr=}, {save_dir=}"
     )
 
-    data = MideaData()
+    data = MideaData(cls=[cls])
 
-    data.gen_mount_data(win=9, scale=2.)
-    
-    data.plot_data(name=osp.join(save_dir, "mount_data.png"))
+    if cls == "13DKB":
+        data.gen_mount_data(win=9, scale=2.)
+        data.plot_data(name=osp.join(save_dir, "mount_data.png"))
 
-    train_data, _ = data.get_data(cls=cls, test_cls=test_cls)
-    
-    test_data, _ = data.get_ori_data(cls=cls, test_cls=test_cls)
-    
+    if cls == "13DKB":
+        train_data, _ = data.get_data(cls=cls, test_cls=test_cls)
+        test_data, _ = data.get_ori_data(cls=cls, test_cls=test_cls)
+    else:
+        train_data, test_data = data.get_ori_data(cls=cls, test_cls=test_cls)
+        
     train_data = data.expand_data(train_data, expand_num)
     test_data = data.expand_data(test_data, expand_num)
 
     tr = np.vstack([item[1] for item in train_data]).copy()
 
-    tr[:, : 2 * expand_num + 1] /= 1e6
+    # tr[:, : 2 * expand_num + 1] /= 1e6
 
     perm = np.random.permutation(len(tr))
 
@@ -115,7 +117,7 @@ def GP(
             for te_name, te_data in test_data:
                 te = te_data.copy()
 
-                te[:, : 2 * expand_num + 1] /= 1e6
+                # te[:, : 2 * expand_num + 1] /= 1e6
                 pred_te_1 = te[te[:, expand_num] < 320]
                 pred_te_2 = te[te[:, expand_num] >= 320]
                 
