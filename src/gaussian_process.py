@@ -70,7 +70,10 @@ def GP(
         
     train_data = data.expand_data(train_data, expand_num)
     test_data = data.expand_data(test_data, expand_num)
-
+    
+    if test_cls == "None":
+        test_data = train_data
+        
     tr = np.vstack([item[1] for item in train_data]).copy()
 
     # tr[:, : 2 * expand_num + 1] /= 1e6

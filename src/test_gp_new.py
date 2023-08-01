@@ -7,7 +7,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 tf.get_logger().setLevel('ERROR')
 import pdb
 
-model = "../output/type1_mount_0716/model/epoch8500"
+model = "../output/type2_0731/model/epoch10000"
 save_dir = "./res"
 
 expand_num = 5
@@ -19,15 +19,17 @@ os.makedirs(save_dir, exist_ok=True)
 
 m = tf.saved_model.load(model)
 
-data = MideaData(cls=["13DKB2"])
-cls_ls = sorted(data.trad_data["13DKB2"].keys(), key=lambda x: int(x[:-1]))
+data = MideaData(cls=["13DKB"])
+cls_ls = sorted(data.trad_data["13DKB"].keys(), key=lambda x: int(x[:-1]))
 for cls in cls_ls:
-    _, test_data = data.get_data(cls="13DKB2", test_cls=cls)
+    _, test_data = data.get_data(cls="13DKB", test_cls=cls)
     test_data = data.expand_data(test_data, expand_num)
 
     for te_name, te_data in test_data:
         te = te_data.copy()
 
+        te[:, : 2 * expand_num + 1] /=  1e6
+        
         pred_te_1 = te[te[:, expand_num] < 320]
         pred_te_2 = te[te[:, expand_num] >= 320]
         
