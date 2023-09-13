@@ -39,12 +39,12 @@ def create_html_table(data1, data2):
     """
     
     headers = "<tr><th></th>" + "".join(f"<th>{name}</th>" for name in ["mae", "rsme", "mape"]) + "</tr>"
-    rows1 = "<tr><td>前30%</td>" + "".join(f"<td>{item}</td>" for item in data1) + "</tr>"
-    rows2 = "<tr><td>后70%</td>" + "".join(f"<td>{item}</td>" for item in data2) + "</tr>"
+    rows1 = "<tr><td>前30%</td>" + "".join(f"<td>{item:.2f}</td>" for item in data1) + "</tr>"
+    rows2 = "<tr><td>后70%</td>" + "".join(f"<td>{item:.2f}</td>" for item in data2) + "</tr>"
     return f"{table}<table>{headers}{rows1}{rows2}</table>"
 
 def plot_result(x, input, gt, y, var, model_choice=None):
-    fig = plt.figure(dpi=300)
+    fig = plt.figure(dpi=400)
 
     if model_choice == "Gaussian Process":
         plt.fill_between(
@@ -52,14 +52,14 @@ def plot_result(x, input, gt, y, var, model_choice=None):
             np.ravel(y + 2 * np.sqrt(var)),
             np.ravel(y - 2 * np.sqrt(var)),
             alpha=0.3,
-            color="orange",
+            color="red",
             label="95% Confidence Interval",
         )
 
-    plt.plot(x, gt, label="gt", alpha=0.7)
-    plt.plot(x, y, label="pred", alpha=0.7)
+    plt.plot(x, gt, label="gt", alpha=0.5)
+    plt.plot(x, y, label="pred", alpha=0.5)
     plt.plot(x, input, label="trad", alpha=0.7)
-    plt.axvline(x[int(.3*len(x))], color='red', linestyle='--', label="30% line")
+    plt.axvline(x[int(.3*len(x))], color='purple', linestyle='--', label="30% line")
 
     plt.xlabel("Frequency")
     plt.ylabel("Power")
@@ -91,7 +91,7 @@ iface = gr.Interface(
     fn=main_function,
     inputs=[
         gr.Dropdown(
-            choices=["Gaussian Process", "SVR", "LightGBM"], label="模型选择"
+            choices=["Gaussian Process", "LightGBM"], label="模型选择"
         ),
         gr.File(label="传统测试数据"),
         gr.File(label="新测试数据"),
@@ -106,12 +106,12 @@ iface = gr.Interface(
         ["LightGBM", "../data/13DKB_trad/1V", "../data/13DKB_new/1V"],
         ["LightGBM", "../data/13DKB_trad/2H", "../data/13DKB_new/2H"],
         ["LightGBM", "../data/13DKB_trad/2V", "../data/13DKB_new/2V"],
-        ["SVR", "../data/13DKB_trad/1H", "../data/13DKB_new/1H"],
-        ["SVR", "../data/13DKB_trad/1V", "../data/13DKB_new/1V"],
-        ["SVR", "../data/13DKB_trad/2H", "../data/13DKB_new/2H"],
-        ["SVR", "../data/13DKB_trad/2V", "../data/13DKB_new/2V"],
+        # ["SVR", "../data/13DKB_trad/1H", "../data/13DKB_new/1H"],
+        # ["SVR", "../data/13DKB_trad/1V", "../data/13DKB_new/1V"],
+        # ["SVR", "../data/13DKB_trad/2H", "../data/13DKB_new/2H"],
+        # ["SVR", "../data/13DKB_trad/2V", "../data/13DKB_new/2V"],
     ],
-    examples_per_page=12,
+    examples_per_page=8,
     theme=gr.themes.Soft(),
     title=TITLE,
     description=DESCRIPTION,

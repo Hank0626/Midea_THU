@@ -4,7 +4,7 @@ import numpy as np
 import lightgbm as lgb
 
 
-model_path = '../model/llf/lgm_params_2.txt'
+model_path = '../gradio_model/lgbm/lgm_params_2.txt'
 
 def lgb_infer(trad, new):
     new = new[~np.isnan(new).any(axis=1), :]

@@ -3,7 +3,7 @@ import numpy as np
 import pickle
 import os
 
-model_path = "../model/lbx/"
+model_path = "../gradio_model/svr"
 
 def svr_infer(trad, new):
     new = new[~np.isnan(new).any(axis=1), :]
@@ -27,7 +27,7 @@ def svr_infer(trad, new):
 
     with open(os.path.join(model_path, "best2.pkl"), "rb") as f:
         model2 = pickle.load(f)
-        
+
     pre1 = model1.predict(data1[:, :2])
     pre2 = model2.predict(data2[:, :2])
 
