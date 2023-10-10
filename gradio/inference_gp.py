@@ -2,11 +2,11 @@ from scipy.interpolate import interp1d
 import numpy as np
 import gradio as gr
 import tensorflow as tf
-from utils import np_mae, np_rmse, np_mape
+from utils import np_mae, np_rmse, np_mape, filter_processing
 
 metrics = [np_mae, np_rmse, np_mape]
 
-model_path = "../gradio_model/gp"
+model_path = "../output/filter_model"
 
 def expand_data(data, n):
     expanded_data = []
@@ -45,7 +45,7 @@ def gp_infer(trad, new):
     y_interpolate = f(trad[:, 0])
 
     data = np.c_[trad[:, 0], y_interpolate, trad[:, 1]]
-
+    data, _ = filter_processing(data)
     model = tf.saved_model.load(model_path)
 
     mean, var = model.compiled_predict_f(expand_data(data, 5)[:, :-1])
