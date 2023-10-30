@@ -88,8 +88,15 @@ def plot_result(x, input, gt, y, var, model_choice=None):
 
 
 def main_function(model_choice, file1, file2):
+        
+    test_cls = file1.name.split("/")
+    print(test_cls)
+    is_peak = test_cls[-1].startswith("2")
+    print("is_peak")
+    print(is_peak)
     file1 = data_process(file1.name)
     file2 = data_process(file2.name)
+
 
     if model_choice == "Gaussian Process":
         res = gp_infer(file1, file2)
@@ -111,7 +118,7 @@ iface = gr.Interface(
     fn=main_function,
     inputs=[
         gr.Dropdown(
-            choices=["Gaussian Process", "LightGBM"], label="模型选择"
+            choices=["Gaussian Process"], label="模型选择"
         ),
         gr.File(label="传统测试数据"),
         gr.File(label="新测试数据"),

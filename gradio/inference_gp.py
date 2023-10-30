@@ -6,7 +6,8 @@ from utils import np_mae, np_rmse, np_mape, filter_processing
 
 metrics = [np_mae, np_rmse, np_mape]
 
-model_path = "../output/filter_model"
+filter_model_path = "../output/filter_model"
+peak_model_path = "../output/peak_model"
 
 def expand_data(data, n):
     expanded_data = []
@@ -31,7 +32,7 @@ def expand_data(data, n):
                 continue
             row_data.append(data[j, 1])
 
-        row_data.append(data[i, 2])
+        # row_data.append(data[i, 2])
         expanded_data.append(row_data)
     return np.array(expanded_data)
 
@@ -45,11 +46,30 @@ def gp_infer(trad, new):
     y_interpolate = f(trad[:, 0])
 
     data = np.c_[trad[:, 0], y_interpolate, trad[:, 1]]
-    data, _ = filter_processing(data)
-    model = tf.saved_model.load(model_path)
+    data, peak = filter_processing(data)
+    filter_model = tf.saved_model.load(filter_model_path)
 
-    mean, var = model.compiled_predict_f(expand_data(data, 5)[:, :-1])
+    # mean, var = filter_model.compiled_predict_f(expand_data(data, 5)[:, :   -1])
 
+    mean, var = filter_model.compiled_predict_f(expand_data(data, 5))
     y = mean.numpy().reshape(-1)
+    
+    
+    
+    if len(peak)>0 :
+    
+        peak_model = tf.saved_model.load(peak_model_path)
+        print(peak[0])
+        # peak_mean, peak_var = peak_model.compiled_predict_f(expand_data(peak, 5)[:, :-1])
+        peak_mean, peak_var = peak_model.compiled_predict_f(expand_data(peak, 5))
+        
+        pre_peak = peak_mean.numpy().reshape(-1)
+        
+        for i in range(peak.shape[0]):
+            idx = int(peak[i,0])
+            print(pre_peak[i])
+            y[idx] += pre_peak[i]
+            
+
 
     return data[:, 0], y_interpolate, data[:, 2], y, var.numpy().reshape(-1)
